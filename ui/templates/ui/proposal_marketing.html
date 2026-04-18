@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Membership - PromiseInvest</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0a2351;
+            --accent: #00a8e8;
+            --gold: #d4af37;
+            --light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #fff;
+            color: #2d3748;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 10px auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .membership-banner {
+            background: #000;
+            color: white;
+            padding: 60px 40px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .membership-banner h2 {
+            font-size: 36px;
+            color: var(--gold);
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .membership-banner p {
+            font-size: 18px;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .deals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .deal-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .deal-icon {
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            background: var(--light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .deal-info h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .deal-info p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .app-cta {
+            margin-top: 50px;
+            text-align: center;
+            background: var(--light);
+            padding: 40px;
+            border-radius: 12px;
+        }
+
+        .app-cta h3 {
+            color: var(--primary);
+        }
+
+        .footer {
+            margin-top: 100px;
+            font-size: 10px;
+            text-align: center;
+            color: #a0aec0;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="membership-banner">
+            <h2>Exclusive Premium Membership Access</h2>
+            <p>Unlock elite deals from over 200+ global brands in the UAE. From car care to lifestyle excursions.</p>
+        </div>
+
+        <h3>Unlock Instant Savings</h3>
+        <div class="deals-grid">
+            <div class="deal-card">
+                <div class="deal-icon">🚗</div>
+                <div class="deal-info">
+                    <h4>25% OFF CARS24</h4>
+                    <p>Exclusive discount on premium car evaluations.</p>
+                </div>
+            </div>
+            <div class="deal-card">
+                <div class="deal-icon">🛠️</div>
+                <div class="deal-info">
+                    <h4>Castrol Car Service</h4>
+                    <p>Flat AED 279 for comprehensive MAGNATEC service.</p>
+                </div>
+            </div>
+            <div class="deal-card">
+                <div class="deal-icon">🛒</div>
+                <div class="deal-info">
+                    <h4>CAR SWITCH</h4>
+                    <p>Up to 40% off on battery & wheel replacements.</p>
+                </div>
+            </div>
+            <div class="deal-card">
+                <div class="deal-icon">💇</div>
+                <div class="deal-info">
+                    <h4>ZOFEUR PROSHOP</h4>
+                    <p>10% off on all grooming and car care services.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-cta">
+            <h3>Download the PromiseInvest App</h3>
+            <p>Scan to explore the latest offers and activate your membership.</p>
+            <img src="/media/promise_qr_code.png" style="width: 150px;" alt="QR Code">
+        </div>
+
+        <div class="footer">
+            * Offers are subject to change without notice at the partner’s discretion. Please check the PromoInvest app for latest updates.
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# Image resize/compress for /quotes/new/ document uploads (ui/quote_documents.py)
+Pillow>=10.0.0

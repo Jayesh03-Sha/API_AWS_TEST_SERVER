@@ -1,0 +1,6 @@
+*.pyc
+__pycache__/
+
+# Local provider debug logs
+logs/api_providers.log
+logs/api_providers.log.*

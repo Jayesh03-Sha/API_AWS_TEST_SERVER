@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Get Quotes</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f6f7fb; }
+    header { background: #111827; color: #fff; padding: 16px 20px; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .card { background: #fff; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.06); padding: 16px; margin-bottom: 16px; }
+    label { display: block; font-weight: 600; margin: 10px 0 6px; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; }
+    textarea { min-height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn { display: inline-block; background: #2563eb; color: #fff; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .muted { color: #6b7280; font-size: 13px; }
+    .error { background: #fee2e2; border: 1px solid #fecaca; color: #7f1d1d; padding: 10px 12px; border-radius: 8px; }
+    pre { background: #0b1020; color: #e5e7eb; padding: 12px; border-radius: 10px; overflow: auto; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    pre, code {
+      white-space: pre-wrap;       /* Standard property for wrapping preformatted text */
+      word-break: break-all;       /* Forces breaks within words if necessary */
+      overflow-wrap: anywhere;     /* Ensures breaking at the edge of the container */
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-size:18px;font-weight:700;">Get Quotes</div>
+          <div class="muted">Calls <code>/api/quotes/get-quotes/</code> using your logged-in session.</div>
+        </div>
+        <div>
+          <a class="btn" href="/">Home</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    {% if error_message %}
+      <div class="card error">{{ error_message }}</div>
+    {% endif %}
+
+    <div class="card">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="card" style="background:#f3f4f6;">
+          <div style="font-weight:700;margin-bottom:6px;">QIC Bayanaty — Fetch Vehicle Details</div>
+          <div class="muted">Enter chassis/VIN and click fetch to auto-fill vehicle fields (make/model/year/trim, etc.).</div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="vin_lookup">VIN / Chassis</label>
+              <input id="vin_lookup" value="" placeholder="e.g. JTMDW3FV4KD510156" />
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button class="btn" type="button" id="btn_fetch_vin">Fetch vehicle details</button>
+            </div>
+          </div>
+          <div class="muted" id="vin_status" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card" style="background:#f3f4f6;">
+          <div style="font-weight:700;margin-bottom:6px;">Auto-fill from pasted customer/vehicle line</div>
+          <div class="muted">Paste the tab-separated line you received (Name, Arabic, EID, Expiry, Email, Mobile, Nationality, DOB, License, TCF, Emirate, Plate No, Plate Code, First Reg, Chassis, etc.).</div>
+          <label for="paste_line" style="margin-top:10px;">Paste here</label>
+          <textarea id="paste_line" placeholder="Paste the full line here…"></textarea>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn" type="button" id="btn_paste_apply">Apply to form</button>
+            <button class="btn" type="button" id="btn_paste_clear" style="background:#374151;">Clear</button>
+          </div>
+          <div class="muted" id="paste_status" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="insurance_type">Insurance type</label>
+            <select id="insurance_type" name="insurance_type" required>
+              <option value="motor" {% if form.insurance_type == "motor" %}selected{% endif %}>motor</option>
+              <option value="health" {% if form.insurance_type == "health" %}selected{% endif %}>health</option>
+              <option value="travel" {% if form.insurance_type == "travel" %}selected{% endif %}>travel</option>
+              <option value="home" {% if form.insurance_type == "home" %}selected{% endif %}>home</option>
+            </select>
+          </div>
+          
+        </div>
+
+        
+
+        <div class="card" style="background:#f3f4f6;">
+          <div style="font-weight:700;margin-bottom:6px;">NIA extra required fields</div>
+          <div class="muted">These fields are required by the NIA CreateQuote validation on your host.</div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="PolAssrPhone">Phone (NIA PolAssrPhone)</label>
+              <input id="PolAssrPhone" name="PolAssrPhone" value="{{ form.PolAssrPhone }}" placeholder="e.g. 25234567" required />
+              <div class="muted">If you enter 05xxxxxxxx it will be converted server-side for NIA.</div>
+            </div>
+            <div>
+              <label for="veh_service_type">Vehicle used for rental/leasing/limousine? (NIA VehServiceType)</label>
+              <select id="veh_service_type" name="veh_service_type" required>
+                <option value="No" {% if form.veh_service_type == "No" %}selected{% endif %}>No</option>
+                <option value="Yes" {% if form.veh_service_type == "Yes" %}selected{% endif %}>Yes</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background:#f3f4f6;">
+          <div style="font-weight:700;margin-bottom:6px;">Anoudapps (QIC) tariff required fields</div>
+          <div class="muted">These codes are required for <code>motor/tariff</code>. If missing, Anoudapps will return an error like “Vehicle Make parameter is missing or invalid”.</div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="anoud_makeCode">Make Code (makeCode)</label>
+              <input id="anoud_makeCode" name="anoud_makeCode" value="{{ form.anoud_makeCode }}" placeholder="e.g. 0775" required />
+            </div>
+            <div>
+              <label for="anoud_modelCode">Model Code (modelCode)</label>
+              <input id="anoud_modelCode" name="anoud_modelCode" value="{{ form.anoud_modelCode }}" placeholder="e.g. 102001" required />
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="anoud_modelYear">Model Year (modelYear)</label>
+              <input id="anoud_modelYear" name="anoud_modelYear" value="{{ form.anoud_modelYear }}" placeholder="e.g. 2019" required />
+            </div>
+            <div>
+              <label for="anoud_noOfCylinder">No of Cylinder Code (noOfCylinder)</label>
+              <input id="anoud_noOfCylinder" name="anoud_noOfCylinder" value="{{ form.anoud_noOfCylinder }}" placeholder="e.g. 1004" required />
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="anoud_vehicleType">Vehicle Type Code (vehicleType)</label>
+              <input id="anoud_vehicleType" name="anoud_vehicleType" value="{{ form.anoud_vehicleType }}" placeholder="e.g. 1002" required />
+              <div class="muted">Auto-filled from Bayanaty <code>bodyTypeId</code> when you fetch VIN (via Annoudapps masterdata).</div>
+            </div>
+            <div></div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="anoud_vehicleUsage">Vehicle Usage (vehicleUsage)</label>
+              <select id="anoud_vehicleUsage" name="anoud_vehicleUsage" required>
+                <option value="">Select</option>
+                {% for code, desc in vehicle_usage_codes %}
+                  <option value="{{ code }}" {% if form.anoud_vehicleUsage == code|stringformat:"s" %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+              <div class="muted">Loaded from <code>nia_vehusage</code> masterdata.</div>
+            </div>
+            <div>
+              <label for="anoud_seatingCapacity">Seating Capacity (seatingCapacity)</label>
+              <input id="anoud_seatingCapacity" name="anoud_seatingCapacity" value="{{ form.anoud_seatingCapacity }}" placeholder="e.g. 5" required />
+              <div class="muted">Auto-filled from Bayanaty <code>seats</code> when you fetch VIN.</div>
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label for="anoud_admeId">Autodata Trim Id (admeId)</label>
+              <input id="anoud_admeId" name="anoud_admeId" value="{{ form.anoud_admeId }}" placeholder="e.g. 401369" required />
+            </div>
+            
+          </div>
+          <div class="row" style="margin-top:10px;">
+            
+            <div>
+              <label for="anoud_driverDOB">Driver DOB (driverDOB dd/MM/yyyy)</label>
+              <input id="anoud_driverDOB" name="anoud_driverDOB" value="{{ form.anoud_driverDOB }}" placeholder="e.g. 01/01/1994" />
+            </div>
+          </div>
+        </div>
+
+       
+
+        <div class="card" style="background:#f9fafb;">
+          <div style="font-weight:700;margin-bottom:6px;">DIC Motor Required Fields</div>
+          <div class="muted">These values are sent as <code>additional_details</code> to the API.</div>
+
+          <div class="row">
+            <div>
+              <label for="insuredName_en">Insured Name (EN)</label>
+              <input id="insuredName_en" name="insuredName_en" value="{{ form.insuredName_en }}" required />
+            </div>
+            <div>
+              <label for="insuredName_ar">Insured Name (AR)</label>
+              <input id="insuredName_ar" name="insuredName_ar" value="{{ form.insuredName_ar }}" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="nationality">Nationality</label>
+              <select id="nationality" name="nationality" required>
+                <option value="">Select</option>
+                {% for code, desc in nationality_codes %}
+                  <option value="{{ code }}" {% if form.nationality == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="emirate">Emirate</label>
+              <select id="emirate" name="emirate" required>
+                <option value="">Select</option>
+                {% for code, desc in emirate_codes %}
+                  <option value="{{ code }}" {% if form.emirate == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="gender">Gender</label>
+              <select id="gender" name="gender" required>
+                <option value="">Select</option>
+                {% for code, desc in gender_codes %}
+                  <option value="{{ code }}" {% if form.gender == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="nationalId">National ID</label>
+              <input id="nationalId" name="nationalId" value="{{ form.nationalId }}" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="dateOfBirth">Date of birth (dd/mm/yyyy)</label>
+              <input id="dateOfBirth" name="dateOfBirth" value="{{ form.dateOfBirth }}" required />
+            </div>
+            <div>
+              <label for="idExpiryDt">ID expiry (dd/mm/yyyy)</label>
+              <input id="idExpiryDt" name="idExpiryDt" value="{{ form.idExpiryDt }}" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="emailAddress">Email</label>
+              <input id="emailAddress" name="emailAddress" value="{{ form.emailAddress }}" required />
+            </div>
+            <div>
+              <label for="mobileNumber">Mobile (971/05…)</label>
+              <input id="mobileNumber" name="mobileNumber" value="{{ form.mobileNumber }}" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="licenseNo">License No</label>
+              <input id="licenseNo" name="licenseNo" value="{{ form.licenseNo }}" required />
+            </div>
+            <div>
+              <label for="chassisNumber">Chassis Number</label>
+              <input id="chassisNumber" name="chassisNumber" value="{{ form.chassisNumber }}" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="licenseFmDt">License From (dd/mm/yyyy)</label>
+              <input id="licenseFmDt" name="licenseFmDt" value="{{ form.licenseFmDt }}" required />
+            </div>
+            <div>
+              <label for="licenseToDt">License To (dd/mm/yyyy)</label>
+              <input id="licenseToDt" name="licenseToDt" value="{{ form.licenseToDt }}" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="regNumber">Reg Number</label>
+              <input id="regNumber" name="regNumber" value="{{ form.regNumber }}" required />
+            </div>
+            <div>
+              <label for="regDt">Reg Date (dd/mm/yyyy)</label>
+              <input id="regDt" name="regDt" value="{{ form.regDt }}" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="plateCode">Plate Code</label>
+              <select id="plateCode" name="plateCode" required>
+                <option value="">Select</option>
+                {% for code, desc in plate_code_codes %}
+                  <option value="{{ code }}" {% if form.plateCode == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="PlateSource">Plate Source</label>
+              <select id="PlateSource" name="PlateSource" required>
+                <option value="">Select</option>
+                {% for code, desc in plate_source_codes %}
+                  <option value="{{ code }}" {% if form.PlateSource == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="tcfNumber">TCF Number</label>
+              <input id="tcfNumber" name="tcfNumber" value="{{ form.tcfNumber }}" required />
+            </div>
+            <div>
+              <label for="ncdYears">NCD Years</label>
+              <select id="ncdYears" name="ncdYears" required>
+                <option value="">Select</option>
+                {% for code, desc in ncd_codes %}
+                  <option value="{{ code }}" {% if form.ncdYears == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="trafficTranType">Traffic Transaction Type</label>
+              <select id="trafficTranType" name="trafficTranType" required>
+                <option value="">Select</option>
+                {% for code, desc in traffic_trans_codes %}
+                  <option value="{{ code }}" {% if form.trafficTranType == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="bankName">Bank Name (optional)</label>
+              <select id="bankName" name="bankName">
+                <option value="">(none)</option>
+                {% for code, desc in bank_codes %}
+                  <option value="{{ code }}" {% if form.bankName == code %}selected{% endif %}>{{ code }} — {{ desc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="isVehBrandNew">Is vehicle brand new?</label>
+              <select id="isVehBrandNew" name="isVehBrandNew" required>
+                <option value="N" {% if form.isVehBrandNew == "N" %}selected{% endif %}>N</option>
+                <option value="Y" {% if form.isVehBrandNew == "Y" %}selected{% endif %}>Y</option>
+              </select>
+            </div>
+            <div>
+              <label for="agencyRepairYn">Agency repair?</label>
+              <select id="agencyRepairYn" name="agencyRepairYn" required>
+                <option value="N" {% if form.agencyRepairYn == "N" %}selected{% endif %}>N</option>
+                <option value="Y" {% if form.agencyRepairYn == "Y" %}selected{% endif %}>Y</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;font-weight:700;">Documents (documentLists)</div>
+          <div class="muted">
+            Upload required documents. Photos (JPG/PNG/WebP, etc.) are resized (max side 2048px) and re-encoded as compressed JPEG on the server before base64, to keep the DIC payload smaller. PDFs are sent as-is.
+          </div>
+
+          <div style="display:grid;grid-template-columns: 1fr 2fr 1fr 2fr; gap:10px; align-items:end; margin-top:10px;">
+            <div class="muted" style="font-weight:700;">Code</div>
+            <div class="muted" style="font-weight:700;">Name</div>
+            <div class="muted" style="font-weight:700;">Type</div>
+            <div class="muted" style="font-weight:700;">File</div>
+
+            <!-- Common mandatory docs from PDF sample -->
+            <input name="document_code[]" value="103" />
+            <input name="document_name[]" value="Emirate ID Front" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" required />
+
+            <input name="document_code[]" value="105" />
+            <input name="document_name[]" value="Emirate ID Back" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" required />
+
+            <input name="document_code[]" value="106" />
+            <input name="document_name[]" value="Driving License Front" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" required />
+
+            <input name="document_code[]" value="121" />
+            <input name="document_name[]" value="Driving License Back" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" required />
+
+            <input name="document_code[]" value="101" />
+            <input name="document_name[]" value="Mulkiya ID Front" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" required />
+
+            <input name="document_code[]" value="102" />
+            <input name="document_name[]" value="Mulkiya ID Back" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" required />
+
+            <!-- Bank LPO (only required if bankName is provided, per error codes) -->
+            <input name="document_code[]" value="107" />
+            <input name="document_name[]" value="BankLpo" />
+            <select name="document_type[]">
+              <option value="png">png</option>
+              <option value="jpg">jpg</option>
+              <option value="pdf">pdf</option>
+            </select>
+            <input name="document_file[]" type="file" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="sum_insured">Sum insured</label>
+            <input id="sum_insured" name="sum_insured" type="number" value="{{ form.sum_insured }}" step="0.01" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn" type="submit">Fetch quotes</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    {% if response_status %}
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div style="font-weight:700;">Response</div>
+          <div class="muted">HTTP {{ response_status }}</div>
+        </div>
+        <pre><code>{{ response_json|safe|json_script:"resp" }}</code></pre>
+        <script>
+          // Pretty-print JSON safely
+          (function () {
+            const el = document.getElementById("resp");
+            if (!el) return;
+            try {
+              const obj = JSON.parse(el.textContent);
+              el.parentElement.textContent = JSON.stringify(obj, null, 2);
+            } catch (e) {
+              // leave as-is
+            }
+          })();
+        </script>
+      </div>
+    {% endif %}
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    async function fetchBayanaty() {
+      const vin = document.getElementById("vin_lookup").value.trim();
+      const statusEl = document.getElementById("vin_status");
+      if (!vin) {
+        statusEl.textContent = "Please enter a VIN.";
+        return;
+      }
+      statusEl.textContent = "Fetching vehicle details…";
+      try {
+        const res = await fetch("/quotes/bayanaty/vehicle-details/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken")
+          },
+          body: JSON.stringify({ vin })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = `Error: ${data.error || res.status}`;
+          return;
+        }
+
+        const ex = data.extracted || {};
+        // Populate the DIC chassisNumber field
+        if (ex.vin) document.getElementById("chassisNumber").value = ex.vin;
+
+        // Populate Anoudapps required fields.
+        // Prefer tariff codes (from Excel mapping). Fall back to Bayanaty IDs if mapping missing.
+        if (ex.tariffMakeCode || ex.makeId) document.getElementById("anoud_makeCode").value = ex.tariffMakeCode || ex.makeId;
+        if (ex.tariffModelCode || ex.modelId) document.getElementById("anoud_modelCode").value = ex.tariffModelCode || ex.modelId;
+        if (ex.modelYear) document.getElementById("anoud_modelYear").value = ex.modelYear;
+        if (ex.engineCapacityId) document.getElementById("anoud_noOfCylinder").value = ex.engineCapacityId;
+        if (ex.vehicleTypeCode) document.getElementById("anoud_vehicleType").value = ex.vehicleTypeCode;
+        if (ex.seats) document.getElementById("anoud_seatingCapacity").value = ex.seats;
+        if (ex.trimId) document.getElementById("anoud_admeId").value = ex.trimId;
+
+        // Auto-fill sum insured to a value that Bayanaty says is valid.
+        // This avoids Anoudapps tariff errors like "Valuation not available in Auto Data".
+        if (ex.vehicleValueMin) {
+          const siEl = document.getElementById("sum_insured");
+          if (siEl) siEl.value = ex.vehicleValueMin;
+        }
+
+        statusEl.textContent = `OK: ${ex.makeValue || ""} ${ex.modelValue || ""} (${ex.modelYear || ""})`;
+      } catch (e) {
+        statusEl.textContent = "Fetch failed.";
+      }
+    }
+
+    document.getElementById("btn_fetch_vin").addEventListener("click", fetchBayanaty);
+
+    function _splitColumns(line) {
+      // Prefer tabs (your sample is tab-separated)
+      if (line.includes("\t")) {
+        return line.split(/\t+/).map(s => s.trim()).filter(Boolean);
+      }
+      // Fallback: split on 2+ spaces
+      return line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function _setInput(id, value) {
+      const el = document.getElementById(id);
+      if (!el || value == null) return;
+      el.value = value;
+    }
+
+    function _selectByTextContains(selectId, needle) {
+      const el = document.getElementById(selectId);
+      if (!el || !needle) return;
+      const n = String(needle).toLowerCase();
+      for (const opt of el.options) {
+        if ((opt.textContent || "").toLowerCase().includes(n)) {
+          el.value = opt.value;
+          return;
+        }
+      }
+    }
+
+    function applyPasteLine() {
+      const statusEl = document.getElementById("paste_status");
+      const raw = document.getElementById("paste_line").value.trim();
+      if (!raw) {
+        statusEl.textContent = "Paste a line first.";
+        return;
+      }
+
+      const cols = _splitColumns(raw);
+      // Expected order from user message:
+      // 0 Name, 1 Name Arabic, 2 EID, 3 expiry, 4 email, 5 mobile, 6 nationality, 7 dob,
+      // 8 license number, 9 license from, 10 license to, 11 tcf, 12 traffic tran type (free text),
+      // 13 emirate, 14 plate number, 15 plate code, 16 first reg, 17 insurance expiry,
+      // 18 model year, 19 chassis, 20 engine, 21 make, 22 model, 23 colour, 24 value
+      if (cols.length < 16) {
+        statusEl.textContent = `Could not parse enough columns (got ${cols.length}). Make sure it is tab-separated.`;
+        return;
+      }
+
+      _setInput("insuredName_en", cols[0]);
+      _setInput("insuredName_ar", cols[1]);
+      _setInput("nationalId", cols[2]);
+      _setInput("idExpiryDt", cols[3]);
+      _setInput("emailAddress", cols[4]);
+      _setInput("mobileNumber", cols[5]);
+      _selectByTextContains("nationality", cols[6]); // matches description text
+      _setInput("dateOfBirth", cols[7]);
+      _setInput("licenseNo", cols[8]);
+      _setInput("licenseFmDt", cols[9] || "");
+      _setInput("licenseToDt", cols[10] || "");
+      _setInput("tcfNumber", cols[11] || "");
+      _selectByTextContains("emirate", cols[13]);
+      _setInput("regNumber", cols[14] || "");
+      _setInput("plateCode", cols[15] || "");
+      _setInput("regDt", cols[16] || "");
+      _setInput("chassisNumber", cols[19] || "");
+
+      statusEl.textContent = "Applied parsed values to the form. Please verify PlateSource, Traffic Transaction Type, and upload documents.";
+    }
+
+    document.getElementById("btn_paste_apply").addEventListener("click", applyPasteLine);
+    document.getElementById("btn_paste_clear").addEventListener("click", () => {
+      document.getElementById("paste_line").value = "";
+      document.getElementById("paste_status").textContent = "";
+    });
+  </script>
+</body>
+</html>
+
